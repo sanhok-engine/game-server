@@ -1,7 +1,7 @@
 #pragma once
 
 #include <sanhok/game/player/player.hpp>
-#include <sanhok/game/protocol/player_movement.hpp>
+#include <sanhok/game/protocol/protocol.hpp>
 #include <sanhok/net/peer_tcp.hpp>
 #include <sanhok/net/peer_udp.hpp>
 
@@ -11,10 +11,8 @@ using boost::asio::ip::udp;
 using ClientID = uint32_t;
 
 class Client final : public std::enable_shared_from_this<Client> {
-    constexpr static unsigned short UDP_PORT = 50010;
-
 public:
-    Client(boost::asio::io_context& ctx, tcp::socket&& socket, ClientID id);
+    Client(boost::asio::io_context& ctx, ClientID id, tcp::socket&& socket);
     ~Client();
 
     void start();
@@ -23,11 +21,13 @@ public:
     void send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer);
 
     bool is_running() const { return is_running_; }
+    udp::endpoint local_endpoint_udp() const { return peer_udp_.local_endpoint(); };
 
     const ClientID id;
 
 private:
     std::function<void(std::vector<uint8_t>&&)> get_protocol_handler(bool buffer_size_prefixed);
+    void handle_protocol_client_join(const protocol::ClientJoin* client_join);
     void handle_protocol_player_movement(const protocol::PlayerMovement* player_movement);
 
     boost::asio::io_context& ctx_;

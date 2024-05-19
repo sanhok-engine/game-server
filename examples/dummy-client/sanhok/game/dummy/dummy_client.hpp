@@ -16,7 +16,6 @@ using ClientID = uint32_t;
 
 class DummyClient final {
     constexpr static milliseconds TICK_INTERVAL = 17ms; // 60 Hz
-    constexpr static unsigned short UDP_PORT = 50010;
 
 public:
     DummyClient();

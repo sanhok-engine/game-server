@@ -3,12 +3,10 @@
 #include <spdlog/spdlog.h>
 
 namespace sanhok::game {
-Client::Client(boost::asio::io_context& ctx, tcp::socket&& socket, const ClientID id)
+Client::Client(boost::asio::io_context& ctx, const ClientID id, tcp::socket&& socket)
     : id(id), ctx_(ctx),
     peer_tcp_(ctx_, std::move(socket), get_protocol_handler(false)),
-    peer_udp_(ctx_, udp::endpoint(udp::v4(), UDP_PORT), get_protocol_handler(true)) {
-    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), UDP_PORT));
-}
+    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {}
 
 Client::~Client() {
     stop();
@@ -18,7 +16,7 @@ void Client::start() {
     if (is_running_.exchange(true)) return;
 
     peer_tcp_.run();
-    peer_udp_.open();
+    // peer_udp_.open();
 }
 
 void Client::stop() {
@@ -50,12 +48,21 @@ std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const b
         }
 
         switch (protocol->protocol_type()) {
-        case ProtocolType::PlayerMovement:
+        [[unlikely]] case ProtocolType::ClientJoin:
+            handle_protocol_client_join(protocol->protocol_as<ClientJoin>());
+            break;
+        [[likely]] case ProtocolType::PlayerMovement:
             handle_protocol_player_movement(protocol->protocol_as<PlayerMovement>());
+            break;
         default:
             break;
         }
     };
+}
+
+void Client::handle_protocol_client_join(const protocol::ClientJoin* client_join) {
+    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), client_join->udp_port()));
+    peer_udp_.open();
 }
 
 void Client::handle_protocol_player_movement(const protocol::PlayerMovement* player_movement) {

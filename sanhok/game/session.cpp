@@ -29,13 +29,12 @@ void Session::start() {
     });
     worker_thread_.detach();
 
-    /*io_thread_ = std::thread([this] {
+    io_thread_ = std::thread([this] {
         while (is_running_) {
             ctx_.run();
         }
     });
-    io_thread_.detach();*/
-    ctx_.run();
+    io_thread_.detach();
 }
 
 void Session::stop() {
@@ -53,7 +52,7 @@ std::function<void(boost::asio::io_context&, tcp::socket&&)> Session::get_listen
         static std::atomic<ClientID> id_generator {0};
 
         const auto new_id = ++id_generator;
-        client_join(std::make_shared<Client>(ctx, std::move(socket), new_id));
+        client_join(std::make_shared<Client>(ctx, new_id, std::move(socket)));
     };
 }
 
@@ -71,7 +70,7 @@ void Session::client_join(std::shared_ptr<Client> client) {
     // Send ClientJoin message to the new client
     using namespace protocol;
     flatbuffers::FlatBufferBuilder builder {64};
-    const auto client_join = CreateClientJoin(builder, client_id);
+    const auto client_join = CreateClientJoin(builder, client_id, client->local_endpoint_udp().port());
     builder.FinishSizePrefixed(CreateProtocol(builder, ProtocolType::ClientJoin, client_join.Union()));
     client->send_tcp(std::make_shared<flatbuffers::DetachedBuffer>(builder.Release()));
 
