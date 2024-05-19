@@ -10,7 +10,7 @@ using boost::asio::ip::tcp;
 using boost::asio::ip::udp;
 using ClientID = uint32_t;
 
-class Client final {
+class Client final : public std::enable_shared_from_this<Client> {
     constexpr static unsigned short UDP_PORT = 50010;
 
 public:

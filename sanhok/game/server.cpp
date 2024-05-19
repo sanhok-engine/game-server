@@ -15,6 +15,7 @@ void Server::start() {
 
     test_session_ = std::make_unique<Session>(777, 50000, 1);
     test_session_->start();
+    while (test_session_->is_running()) {}
 }
 
 void Server::stop() {

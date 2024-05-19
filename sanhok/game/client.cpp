@@ -6,9 +6,9 @@ namespace sanhok::game {
 Client::Client(boost::asio::io_context& ctx, tcp::socket&& socket, const ClientID id)
     : id(id), ctx_(ctx),
     peer_tcp_(ctx_, std::move(socket), get_protocol_handler(false)),
-    peer_udp_(ctx_, udp::endpoint(udp::v4(), UDP_PORT),
-        udp::endpoint(peer_tcp_.remote_endpoint().address(), UDP_PORT), get_protocol_handler(true))
-{}
+    peer_udp_(ctx_, udp::endpoint(udp::v4(), UDP_PORT), get_protocol_handler(true)) {
+    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), UDP_PORT));
+}
 
 Client::~Client() {
     stop();
@@ -49,7 +49,6 @@ std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const b
             return;
         }
 
-        const flatbuffers::Verifier verifier {buffer.data(), buffer.size()};
         switch (protocol->protocol_type()) {
         case ProtocolType::PlayerMovement:
             handle_protocol_player_movement(protocol->protocol_as<PlayerMovement>());

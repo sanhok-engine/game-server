@@ -1,4 +1,5 @@
 #include <sanhok/game/session.hpp>
+#include <sanhok/game/protocol/protocol.hpp>
 
 namespace sanhok::game {
 Session::Session(const SessionID id, const unsigned short listen_port, const size_t zones)
@@ -28,51 +29,62 @@ void Session::start() {
     });
     worker_thread_.detach();
 
-    io_thread_ = std::thread([this] {
+    /*io_thread_ = std::thread([this] {
         while (is_running_) {
             ctx_.run();
         }
     });
+    io_thread_.detach();*/
+    ctx_.run();
 }
 
 void Session::stop() {
     if (!is_running_.exchange(false)) return;
 
     listener_.stop();
+    clients_.clear();
+    for (auto& zone : zones_) {
+        zone.clients.clear();
+    }
 }
 
 std::function<void(boost::asio::io_context&, tcp::socket&&)> Session::get_listener_on_acceptance() {
     return [this](boost::asio::io_context& ctx, tcp::socket&& socket) {
         static std::atomic<ClientID> id_generator {0};
 
-        if (state_ != State::PREPARING) {
-            try { socket.close(); } catch (const boost::system::system_error& e) {}
-            return;
-        }
-
         const auto new_id = ++id_generator;
-        zone_default_.clients.insert_or_assign(new_id, std::make_shared<Client>(ctx, std::move(socket), new_id));
+        client_join(std::make_shared<Client>(ctx, std::move(socket), new_id));
     };
 }
 
-bool Session::client_join(std::shared_ptr<Client> client) {
-    if (state_ != State::PREPARING) return false;
+void Session::client_join(std::shared_ptr<Client> client) {
+    if (state_ != State::PREPARING) {
+        spdlog::warn("[Session] Client ({}) is denied; Session is not PREPARING", client->id);
+        client->stop();
+        return;
+    }
 
     const auto client_id = client->id;
-    zone_default_.clients.insert_or_assign(client_id, std::move(client));
-    return true;
+    spdlog::info("[Session] Client ({}) has joined", client_id);
+    client->start();
+
+    // Send ClientJoin message to the new client
+    using namespace protocol;
+    flatbuffers::FlatBufferBuilder builder {64};
+    const auto client_join = CreateClientJoin(builder, client_id);
+    builder.FinishSizePrefixed(CreateProtocol(builder, ProtocolType::ClientJoin, client_join.Union()));
+    client->send_tcp(std::make_shared<flatbuffers::DetachedBuffer>(builder.Release()));
+
+    clients_.insert_or_assign(client_id, std::move(client));
 }
 
 void Session::client_leave(const ClientID client_id) {
-    if (zone_default_.clients.contains(client_id)) {
-        zone_default_.clients.erase(client_id);
-    }
-
     for (auto& zone : zones_) {
-        if (!zone.clients.contains(client_id)) continue;
         zone.clients.erase(client_id);
     }
+
+    clients_.erase(client_id);
 }
 
-void Session::update(milliseconds dt) {}
+void Session::update(const milliseconds dt) {}
 }

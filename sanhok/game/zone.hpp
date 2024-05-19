@@ -6,8 +6,8 @@
 namespace sanhok::game {
 class Zone {
 public:
-    void broadcast_tcp(std::unique_ptr<flatbuffers::DetachedBuffer> buffer, ClientID exception);
-    void broadcast_udp(std::unique_ptr<flatbuffers::DetachedBuffer> buffer, ClientID exception);
+    void broadcast_tcp(std::unique_ptr<flatbuffers::DetachedBuffer> buffer);
+    void broadcast_udp(std::unique_ptr<flatbuffers::DetachedBuffer> buffer);
 
     ConcurrentMap<ClientID, std::shared_ptr<Client>> clients {};
 };

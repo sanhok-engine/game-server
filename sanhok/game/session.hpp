@@ -24,7 +24,7 @@ public:
 
     void start();
     void stop();
-    bool client_join(std::shared_ptr<Client> client);
+    void client_join(std::shared_ptr<Client> client);
     void client_leave(ClientID client_id);
 
     bool is_running() const { return is_running_; }
@@ -43,7 +43,7 @@ private:
     std::atomic<bool> is_running_ {false};
 
     State state_ {State::PREPARING};
-    Zone zone_default_ {};
+    ConcurrentMap<ClientID, std::shared_ptr<Client>> clients_ {};
     std::vector<Zone> zones_;
 
     std::thread worker_thread_;
