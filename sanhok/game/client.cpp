@@ -1,29 +1,42 @@
-#include <sanhok/game/game_client.hpp>
+#include <sanhok/game/client.hpp>
 #include <sanhok/game/protocol/protocol.hpp>
 #include <spdlog/spdlog.h>
 
 namespace sanhok::game {
-GameClient::GameClient(boost::asio::io_context& ctx, tcp::socket&& socket, const ClientID id)
-    : ctx_(ctx),
+Client::Client(boost::asio::io_context& ctx, tcp::socket&& socket, const ClientID id)
+    : id(id), ctx_(ctx),
     peer_tcp_(ctx_, std::move(socket), get_protocol_handler(false)),
     peer_udp_(ctx_, udp::endpoint(udp::v4(), UDP_PORT),
-        udp::endpoint(peer_tcp_.remote_endpoint().address(), UDP_PORT), get_protocol_handler(true)) {}
+        udp::endpoint(peer_tcp_.remote_endpoint().address(), UDP_PORT), get_protocol_handler(true))
+{}
 
-void GameClient::start() {
+Client::~Client() {
+    stop();
+}
+
+void Client::start() {
     if (is_running_.exchange(true)) return;
 
     peer_tcp_.run();
     peer_udp_.open();
 }
 
-void GameClient::stop() {
+void Client::stop() {
     if (!is_running_.exchange(false)) return;
 
     peer_tcp_.disconnect();
     peer_udp_.close();
 }
 
-std::function<void(std::vector<uint8_t>&&)> GameClient::get_protocol_handler(const bool buffer_size_prefixed) {
+void Client::send_tcp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
+    peer_tcp_.send_message(std::move(buffer));
+}
+
+void Client::send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
+    peer_udp_.send_packet(std::move(buffer));
+}
+
+std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const bool buffer_size_prefixed) {
     return [this, buffer_size_prefixed](std::vector<uint8_t>&& buffer)->void {
         using namespace sanhok::game::protocol;
 
@@ -46,7 +59,7 @@ std::function<void(std::vector<uint8_t>&&)> GameClient::get_protocol_handler(con
     };
 }
 
-void GameClient::handle_protocol_player_movement(const protocol::PlayerMovement* player_movement) {
+void Client::handle_protocol_player_movement(const protocol::PlayerMovement* player_movement) {
     if (!player_movement) return;
 }
 }

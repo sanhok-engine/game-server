@@ -28,10 +28,14 @@ add_library(libgame STATIC
     sanhok/game/player/player.cpp
     sanhok/game/player/player_movement.hpp
     sanhok/game/player/player_movement.cpp
-    sanhok/game/game_client.hpp
-    sanhok/game/game_client.cpp
-    sanhok/game/game_server.hpp
-    sanhok/game/game_server.cpp
+    sanhok/game/client.hpp
+    sanhok/game/client.cpp
+    sanhok/game/server.hpp
+    sanhok/game/server.cpp
+    sanhok/game/session.hpp
+    sanhok/game/session.cpp
+    sanhok/game/zone.hpp
+    sanhok/game/zone.cpp
 )
 add_library(sanhok::libgame ALIAS libgame)
 target_compile_features(libgame PUBLIC cxx_std_20)
