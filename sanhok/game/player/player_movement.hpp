@@ -1,23 +1,22 @@
 #pragma once
 
 #include <glm/vec3.hpp>
+#include <sanhok/game/protocol/player_movement.hpp>
 
 #include <chrono>
 
 namespace sanhok::game::player {
+using protocol::PlayerMovementType;
+using protocol::PlayerMovementDirection;
+
 class PlayerMovement final {
 public:
-    enum class Movement {
-        IDLE,
-        STANDING_WALK, STANDING_RUN, STANDING_SPRINT,
-        CROUCH_WALK, CROUCH_RUN, CROUCH_SPRINT,
-        CRAWLING,
-        SWIMMING,
-    };
-
-    void move(std::chrono::milliseconds dt, Movement movement);
+    void move(std::chrono::milliseconds dt);
 
     glm::vec3 position {};
-    glm::vec3 look {0, 0, 1.0};
+    PlayerMovementType movement_type {PlayerMovementType::IDLE};
+    PlayerMovementDirection movement_direction {PlayerMovementDirection::FORWARD};
+    glm::vec3 body_direction {0, 0, 1.0f};
+    glm::vec3 aim_direction {body_direction};
 };
 }

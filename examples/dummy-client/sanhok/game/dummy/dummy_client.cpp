@@ -48,8 +48,24 @@ void DummyClient::stop() {
     if (worker_thread_.joinable()) worker_thread_.join();
 }
 
-void DummyClient::update(milliseconds dt) {
+void DummyClient::update(const milliseconds dt) {
     if (!is_joined_) return;
+
+    player_.update(dt);
+
+    // Send PlayerMovement packet
+    using namespace protocol;
+    flatbuffers::FlatBufferBuilder builder {128};
+    const Vector3 direction {player_.body_direction.x, player_.body_direction.y, player_.body_direction.z};
+    const auto player_movement = CreatePlayerMovement(builder,
+        id_,
+        player_.movement_type(),
+        player_.movement_direction(),
+        &direction,
+        &direction
+    );
+    builder.FinishSizePrefixed(CreateProtocol(builder, ProtocolType::PlayerMovement, player_movement.Union()));
+    peer_udp_.send_packet(std::make_shared<flatbuffers::DetachedBuffer>(builder.Release()));
 }
 
 std::function<void(std::vector<uint8_t>&&)> DummyClient::get_protocol_handler(const bool buffer_size_prefixed) {
@@ -82,7 +98,7 @@ void DummyClient::handle_client_join(const protocol::ClientJoin* client_join) {
     const auto udp_port = client_join->udp_port();
     peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), udp_port));
     peer_udp_.open();
-    spdlog::info("[DummyClient] Connect UDP remote port {}", udp_port);
+    spdlog::info("[DummyClient] Connect to UDP remote port {}", udp_port);
 
     // Send ClientJoin message as a respond to the server
     using namespace protocol;

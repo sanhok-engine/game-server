@@ -14,4 +14,6 @@ void Zone::broadcast_udp(std::unique_ptr<flatbuffers::DetachedBuffer> buffer) {
             client->send_udp(buffer);
         }, std::shared_ptr<flatbuffers::DetachedBuffer>(buffer.release()));
 }
+
+void Zone::update(const milliseconds dt) {}
 }

@@ -85,5 +85,13 @@ void Session::client_leave(const ClientID client_id) {
     clients_.erase(client_id);
 }
 
-void Session::update(const milliseconds dt) {}
+void Session::update(const milliseconds dt) {
+    clients_.apply_all([dt](std::shared_ptr<Client>& client) {
+        client->update(dt);
+    });
+
+    for (auto& zone : zones_) {
+        zone.update(dt);
+    }
+}
 }

@@ -34,6 +34,12 @@ void Client::send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
     peer_udp_.send_packet(std::move(buffer));
 }
 
+void Client::update(const milliseconds dt) {
+    player_.player_movement.move(dt);
+    spdlog::debug("[Client] ({}) ({}, {}, {})",
+        id, player_.player_movement.position.x, player_.player_movement.position.y, player_.player_movement.position.z);
+}
+
 std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const bool buffer_size_prefixed) {
     return [this, buffer_size_prefixed](std::vector<uint8_t>&& buffer)->void {
         using namespace sanhok::game::protocol;
@@ -47,11 +53,12 @@ std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const b
             return;
         }
 
+        // flatbuffers::Verifier verifier {buffer.data(), buffer.size()};
         switch (protocol->protocol_type()) {
-        [[unlikely]] case ProtocolType::ClientJoin:
+            [[unlikely]] case ProtocolType::ClientJoin:
             handle_protocol_client_join(protocol->protocol_as<ClientJoin>());
             break;
-        [[likely]] case ProtocolType::PlayerMovement:
+            [[likely]] case ProtocolType::PlayerMovement:
             handle_protocol_player_movement(protocol->protocol_as<PlayerMovement>());
             break;
         default:
@@ -61,11 +68,27 @@ std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const b
 }
 
 void Client::handle_protocol_client_join(const protocol::ClientJoin* client_join) {
-    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), client_join->udp_port()));
+    if (!client_join) return;
+
+    const auto udp_port = client_join->udp_port();
+    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), udp_port));
     peer_udp_.open();
+    spdlog::info("[DummyClient] ({}) Connect to UDP {}:{}", id, peer_tcp_.remote_endpoint().address().to_string(),
+        udp_port);
 }
 
 void Client::handle_protocol_player_movement(const protocol::PlayerMovement* player_movement) {
     if (!player_movement) return;
+    if (id != player_movement->client_id()) return;
+
+    spdlog::debug("handle_protocol_player_movement");
+
+    //TODO: Ignore older packet?
+    const auto body_direction = player_movement->body_diection();
+    const auto aim_direction = player_movement->aim_direction();
+    player_.player_movement.body_direction = {body_direction->x(), body_direction->y(), body_direction->z()};
+    player_.player_movement.aim_direction = {aim_direction->x(), aim_direction->y(), aim_direction->z()};
+    player_.player_movement.movement_type = player_movement->movement_type();
+    player_.player_movement.movement_direction = player_movement->movement_direction();
 }
 }
