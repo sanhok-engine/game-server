@@ -101,14 +101,12 @@ std::function<void(std::vector<uint8_t>&&)> DummyClient::get_protocol_handler(co
 }
 
 void DummyClient::handle_client_join(const protocol::ClientJoin* client_join) {
+    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), client_join->udp_port()));
+    peer_udp_.open();
+
     id_ = client_join->client_id();
     spdlog::info("[DummyClient] Joined the session with id ({})", id_);
     is_joined_ = true;
-
-    const auto udp_port = client_join->udp_port();
-    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), udp_port));
-    peer_udp_.open();
-    spdlog::info("[DummyClient] Connect to UDP remote port {}", udp_port);
 
     // Send ClientJoin message as a respond to the server
     using namespace protocol;

@@ -124,7 +124,7 @@ inline void PeerTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> m
     co_spawn(ctx_, [this]()->boost::asio::awaitable<void> {
         while (!send_queue_.empty()) {
             const auto message = send_queue_.pop();
-            if (!message) continue;;
+            if (!message) continue;
 
             if (auto [ec, _] = co_await socket_.async_send(boost::asio::buffer((*message)->data(), (*message)->size()),
                 as_tuple(boost::asio::use_awaitable)); ec) {
