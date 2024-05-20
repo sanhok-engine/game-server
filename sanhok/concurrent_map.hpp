@@ -81,6 +81,11 @@ public:
         return map_.empty();
     }
 
+    size_t size() const {
+        std::shared_lock lock {mutex_};
+        return map_.size();
+    }
+
 private:
     std::unordered_map<KeyType, ValueType> map_ {};
     mutable std::shared_mutex mutex_ {};

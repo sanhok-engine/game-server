@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>
 #include <sanhok/concurrent_map.hpp>
 #include <sanhok/game/client.hpp>
-#include <sanhok/game/zone.hpp>
+#include <sanhok/game/game_manager.hpp>
 #include <sanhok/net/listener_tcp.hpp>
 
 #include <chrono>
@@ -17,9 +17,7 @@ class Session {
     constexpr static milliseconds TICK_INTERVAL = 33ms; // 30 Hz
 
 public:
-    enum class State { PREPARING, PLAYING, FINISHED };
-
-    Session(SessionID id, unsigned short listen_port, size_t zones);
+    Session(SessionID id, unsigned short listen_port);
     ~Session();
 
     void start();
@@ -28,7 +26,9 @@ public:
     void client_leave(ClientID client_id);
 
     bool is_running() const { return is_running_; }
-    State state() const { return state_; }
+    bool is_listening() const { return is_listening_; }
+    tcp::endpoint listen_endpoint() const { return listener_.local_endpoint(); }
+
     std::function<void(boost::asio::io_context&, tcp::socket&&)> get_listener_on_acceptance();
 
 private:
@@ -41,10 +41,10 @@ private:
     boost::asio::io_context ctx_ {};
     net::ListenerTCP listener_;
     std::atomic<bool> is_running_ {false};
+    std::atomic<bool> is_listening_ {false};
 
-    State state_ {State::PREPARING};
     ConcurrentMap<ClientID, std::shared_ptr<Client>> clients_ {};
-    std::vector<Zone> zones_;
+    GameManager game_manager_;
 
     std::thread worker_thread_;
     std::thread io_thread_;

@@ -16,6 +16,8 @@ public:
     void start();
     void stop();
 
+    tcp::endpoint local_endpoint() const { return acceptor_.local_endpoint(); }
+
 private:
     boost::asio::awaitable<void> listen();
 
@@ -58,7 +60,8 @@ inline boost::asio::awaitable<void> ListenerTCP::listen() {
             continue;
         }
 
-        spdlog::info("[ListenerTCP] Accepts from {}:{}", socket.remote_endpoint().address().to_string(), socket.remote_endpoint().port());
+        spdlog::info("[ListenerTCP] Accepts from {}:{}", socket.remote_endpoint().address().to_string(),
+            socket.remote_endpoint().port());
         on_acceptance_(ctx_, std::move(socket));
     }
 }

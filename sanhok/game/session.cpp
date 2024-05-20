@@ -2,8 +2,8 @@
 #include <sanhok/game/protocol/protocol.hpp>
 
 namespace sanhok::game {
-Session::Session(const SessionID id, const unsigned short listen_port, const size_t zones)
-    : id(id), listener_(ctx_, listen_port, get_listener_on_acceptance()), zones_(zones) {}
+Session::Session(const SessionID id, const unsigned short listen_port)
+    : id(id), listener_(ctx_, listen_port, get_listener_on_acceptance()), game_manager_(1) {}
 
 Session::~Session() {
     stop();
@@ -13,7 +13,7 @@ Session::~Session() {
 
 void Session::start() {
     if (is_running_.exchange(true)) return;
-
+    is_listening_ = true;
     listener_.start();
 
     worker_thread_ = std::thread([this] {
@@ -39,12 +39,11 @@ void Session::start() {
 
 void Session::stop() {
     if (!is_running_.exchange(false)) return;
+    is_listening_ = false;
 
+    game_manager_.stop();
     listener_.stop();
     clients_.clear();
-    for (auto& zone : zones_) {
-        zone.clients.clear();
-    }
 }
 
 std::function<void(boost::asio::io_context&, tcp::socket&&)> Session::get_listener_on_acceptance() {
@@ -57,8 +56,8 @@ std::function<void(boost::asio::io_context&, tcp::socket&&)> Session::get_listen
 }
 
 void Session::client_join(std::shared_ptr<Client> client) {
-    if (state_ != State::PREPARING) {
-        spdlog::warn("[Session] Client ({}) is denied; Session is not PREPARING", client->id);
+    if (!is_listening_) {
+        spdlog::warn("[Session] Client ({}) is denied", client->id);
         client->stop();
         return;
     }
@@ -78,10 +77,7 @@ void Session::client_join(std::shared_ptr<Client> client) {
 }
 
 void Session::client_leave(const ClientID client_id) {
-    for (auto& zone : zones_) {
-        zone.clients.erase(client_id);
-    }
-
+    game_manager_.player_leave(client_id);
     clients_.erase(client_id);
 }
 
@@ -89,9 +85,5 @@ void Session::update(const milliseconds dt) {
     clients_.apply_all([dt](std::shared_ptr<Client>& client) {
         client->update(dt);
     });
-
-    for (auto& zone : zones_) {
-        zone.update(dt);
-    }
 }
 }

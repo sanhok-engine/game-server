@@ -13,7 +13,7 @@ Server::~Server() {
 void Server::start() {
     if (is_running_.exchange(true)) return;
 
-    test_session_ = std::make_unique<Session>(777, 50000, 1);
+    test_session_ = std::make_unique<Session>(777, 50000);
     test_session_->start();
     while (test_session_->is_running()) {}
 }

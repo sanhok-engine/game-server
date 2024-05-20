@@ -5,6 +5,6 @@
 namespace sanhok::game::player {
 class Player {
 public:
-    PlayerMovement player_movement {};
+    PlayerMovement movement {};
 };
 }

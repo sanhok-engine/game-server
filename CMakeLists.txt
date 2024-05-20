@@ -43,6 +43,8 @@ add_library(libsanhok STATIC
     sanhok/game/player/player.cpp
     sanhok/game/player/player_movement.hpp
     sanhok/game/player/player_movement.cpp
+    sanhok/game/game_manager.cpp
+    sanhok/game/game_manager.hpp
     sanhok/game/client.hpp
     sanhok/game/client.cpp
     sanhok/game/server.hpp
@@ -51,9 +53,11 @@ add_library(libsanhok STATIC
     sanhok/game/session.cpp
     sanhok/game/zone.hpp
     sanhok/game/zone.cpp
+
     sanhok/net/listener_tcp.hpp
     sanhok/net/peer_tcp.hpp
     sanhok/net/peer_udp.hpp
+
     sanhok/bip_buffer.hpp
     sanhok/concurrent_map.hpp
     sanhok/concurrent_queue.hpp

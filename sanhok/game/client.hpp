@@ -27,8 +27,6 @@ public:
     bool is_running() const { return is_running_; }
     udp::endpoint local_endpoint_udp() const { return peer_udp_.local_endpoint(); };
 
-    const ClientID id;
-
 private:
     std::function<void()> get_on_connection();
     std::function<void()> get_on_disconnection();
@@ -36,11 +34,14 @@ private:
     void handle_protocol_client_join(const protocol::ClientJoin* client_join);
     void handle_protocol_player_movement(const protocol::PlayerMovement* player_movement);
 
+public:
+    const ClientID id;
+    player::Player player {};
+
+private:
     boost::asio::io_context& ctx_;
     net::PeerTCP peer_tcp_;
     net::PeerUDP peer_udp_;
     std::atomic<bool> is_running_ {false};
-
-    player::Player player_ {};
 };
 }

@@ -115,7 +115,7 @@ inline boost::asio::awaitable<void> PeerUDP::receive_packet() {
     std::vector<uint8_t> buffer(receive_buffer_size_);
     const auto [ec, _bytes] = co_await socket_.async_receive(
         boost::asio::buffer(buffer.data(), buffer.size()), as_tuple(boost::asio::use_awaitable));
-    if ( ec) {
+    if (ec) {
         spdlog::error("[PeerUDP] Error receiving packet: {}", ec.what());
         close();
         co_return;

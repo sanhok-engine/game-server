@@ -36,7 +36,7 @@ void Client::send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
 void Client::update(const milliseconds dt) {
     if (!is_running_) return;
 
-    player_.player_movement.move(dt);
+    player.movement.move(dt);
 }
 
 std::function<void()> Client::get_on_connection() {
@@ -91,9 +91,9 @@ void Client::handle_protocol_player_movement(const protocol::PlayerMovement* pla
     //TODO: Ignore older packet?
     const auto body_direction = player_movement->body_diection();
     const auto aim_direction = player_movement->aim_direction();
-    player_.player_movement.body_direction = {body_direction->x(), body_direction->y(), body_direction->z()};
-    player_.player_movement.aim_direction = {aim_direction->x(), aim_direction->y(), aim_direction->z()};
-    player_.player_movement.movement_type = player_movement->movement_type();
-    player_.player_movement.movement_direction = player_movement->movement_direction();
+    player.movement.body_direction = {body_direction->x(), body_direction->y(), body_direction->z()};
+    player.movement.aim_direction = {aim_direction->x(), aim_direction->y(), aim_direction->z()};
+    player.movement.movement_type = player_movement->movement_type();
+    player.movement.movement_direction = player_movement->movement_direction();
 }
 }
