@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(sanhok
+project(sanhok-server
     VERSION 0.1
     LANGUAGES CXX
 )
@@ -64,16 +64,14 @@ add_library(libsanhok STATIC
 )
 add_library(sanhok::libsanhok ALIAS libsanhok)
 target_compile_features(libsanhok PUBLIC cxx_std_20)
-target_include_directories(libsanhok
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-)
+target_include_directories(libsanhok PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(libsanhok PUBLIC
     Boost::system
     flatbuffers
     spdlog::spdlog
     glm::glm)
 
-# Compile schemas
+# compile schemas
 file(GLOB schemas RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} sanhok/game/protocol/schemas/*.fbs)
 add_custom_target(
     libsanhok-compile-schemas

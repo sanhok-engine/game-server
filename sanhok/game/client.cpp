@@ -5,8 +5,9 @@
 namespace sanhok::game {
 Client::Client(boost::asio::io_context& ctx, const ClientID id, tcp::socket&& socket)
     : id(id), ctx_(ctx),
-    peer_tcp_(ctx_, std::move(socket), get_on_connection(), get_on_disconnection(), get_protocol_handler(false)),
-    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {}
+    peer_tcp_(ctx_, std::move(socket),
+        Client::get_on_connection(), Client::get_on_disconnection(), Client::get_protocol_handler(false)),
+    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), Client::get_protocol_handler(true)) {}
 
 Client::~Client() {
     stop();

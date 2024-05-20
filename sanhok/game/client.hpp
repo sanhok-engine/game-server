@@ -13,10 +13,10 @@ using boost::asio::ip::udp;
 using namespace std::chrono;
 using ClientID = uint32_t;
 
-class Client final : public std::enable_shared_from_this<Client> {
+class Client : public std::enable_shared_from_this<Client> {
 public:
     Client(boost::asio::io_context& ctx, ClientID id, tcp::socket&& socket);
-    ~Client();
+    virtual ~Client();
 
     void start();
     void stop();
@@ -28,9 +28,10 @@ public:
     udp::endpoint local_endpoint_udp() const { return peer_udp_.local_endpoint(); };
 
 private:
-    std::function<void()> get_on_connection();
-    std::function<void()> get_on_disconnection();
-    std::function<void(std::vector<uint8_t>&&)> get_protocol_handler(bool buffer_size_prefixed);
+    virtual std::function<void()> get_on_connection();
+    virtual std::function<void()> get_on_disconnection();
+    virtual std::function<void(std::vector<uint8_t>&&)> get_protocol_handler(bool buffer_size_prefixed);
+
     void handle_protocol_client_join(const protocol::ClientJoin* client_join);
     void handle_protocol_player_movement(const protocol::PlayerMovement* player_movement);
 
