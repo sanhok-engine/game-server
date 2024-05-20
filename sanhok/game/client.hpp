@@ -30,6 +30,8 @@ public:
     const ClientID id;
 
 private:
+    std::function<void()> get_on_connection();
+    std::function<void()> get_on_disconnection();
     std::function<void(std::vector<uint8_t>&&)> get_protocol_handler(bool buffer_size_prefixed);
     void handle_protocol_client_join(const protocol::ClientJoin* client_join);
     void handle_protocol_player_movement(const protocol::PlayerMovement* player_movement);

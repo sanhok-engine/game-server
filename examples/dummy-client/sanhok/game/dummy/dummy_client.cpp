@@ -2,7 +2,7 @@
 
 namespace sanhok::game::dummy {
 DummyClient::DummyClient()
-    : peer_tcp_(ctx_, tcp::socket {ctx_}, get_protocol_handler(false)),
+    : peer_tcp_(ctx_, tcp::socket {ctx_}, get_on_connection(), get_on_disconnection(), get_protocol_handler(false)),
     peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {}
 
 DummyClient::~DummyClient() {
@@ -66,6 +66,16 @@ void DummyClient::update(const milliseconds dt) {
     );
     builder.FinishSizePrefixed(CreateProtocol(builder, ProtocolType::PlayerMovement, player_movement.Union()));
     peer_udp_.send_packet(std::make_shared<flatbuffers::DetachedBuffer>(builder.Release()));
+}
+
+std::function<void()> DummyClient::get_on_connection() {
+    return [this] {};
+}
+
+std::function<void()> DummyClient::get_on_disconnection() {
+    return [this] {
+        stop();
+    };
 }
 
 std::function<void(std::vector<uint8_t>&&)> DummyClient::get_protocol_handler(const bool buffer_size_prefixed) {

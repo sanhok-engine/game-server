@@ -5,7 +5,7 @@
 namespace sanhok::game {
 Client::Client(boost::asio::io_context& ctx, const ClientID id, tcp::socket&& socket)
     : id(id), ctx_(ctx),
-    peer_tcp_(ctx_, std::move(socket), get_protocol_handler(false)),
+    peer_tcp_(ctx_, std::move(socket), get_on_connection(), get_on_disconnection(), get_protocol_handler(false)),
     peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {}
 
 Client::~Client() {
@@ -35,9 +35,21 @@ void Client::send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
 }
 
 void Client::update(const milliseconds dt) {
+    if (!is_running_) return;
+
     player_.player_movement.move(dt);
     spdlog::debug("[Client] ({}) ({}, {}, {})",
         id, player_.player_movement.position.x, player_.player_movement.position.y, player_.player_movement.position.z);
+}
+
+std::function<void()> Client::get_on_connection() {
+    return [this] {};
+}
+
+std::function<void()> Client::get_on_disconnection() {
+    return [this] {
+        stop();
+    };
 }
 
 std::function<void(std::vector<uint8_t>&&)> Client::get_protocol_handler(const bool buffer_size_prefixed) {
