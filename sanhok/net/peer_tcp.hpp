@@ -20,7 +20,7 @@ public:
     boost::asio::awaitable<bool> connect(const tcp::endpoint& remote_endpoint);
     void disconnect();
     void send_message(std::shared_ptr<flatbuffers::DetachedBuffer> message);
-    void set_no_delay(bool delay);
+    void set_no_delay(bool no_delay);
 
     bool is_connected() const { return is_connected_; }
     tcp::endpoint local_endpoint() const { return socket_.local_endpoint(); }
@@ -138,9 +138,9 @@ inline void PeerTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> m
     }, boost::asio::detached);
 }
 
-inline void PeerTCP::set_no_delay(const bool delay) {
+inline void PeerTCP::set_no_delay(const bool no_delay) {
     try {
-        socket_.set_option(tcp::no_delay(delay));
+        socket_.set_option(tcp::no_delay(no_delay));
     } catch (const boost::system::system_error& e) {
         spdlog::error("[PeerTCP] Error setting no-delay: {}", e.what());
     }

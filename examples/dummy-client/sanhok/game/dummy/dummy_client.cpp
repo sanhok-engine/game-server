@@ -3,7 +3,9 @@
 namespace sanhok::game::dummy {
 DummyClient::DummyClient()
     : peer_tcp_(ctx_, tcp::socket {ctx_}, get_on_connection(), get_on_disconnection(), get_protocol_handler(false)),
-    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {}
+    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {
+    peer_tcp_.set_no_delay(true);
+}
 
 DummyClient::~DummyClient() {
     stop();
