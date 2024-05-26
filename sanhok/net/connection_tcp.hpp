@@ -3,18 +3,18 @@
 #include <boost/asio.hpp>
 #include <boost/core/noncopyable.hpp>
 #include <flatbuffers/flatbuffers.h>
-#include <sanhok/concurrent_queue.hpp>
+#include <sanhok/container/concurrent_queue.hpp>
 #include <spdlog/spdlog.h>
 
 namespace sanhok::net {
 using boost::asio::ip::tcp;
 
-class PeerTCP final : boost::noncopyable {
+class ConnectionTCP final : boost::noncopyable {
 public:
-    PeerTCP(boost::asio::io_context& ctx, tcp::socket&& socket,
-        std::function<void()>&& on_connection, std::function<void()>&& on_disconnection,
-        std::function<void(std::vector<uint8_t>&&)>&& on_message);
-    ~PeerTCP();
+    ConnectionTCP(boost::asio::io_context& ctx, tcp::socket&& socket,
+                  std::function<void()>&& on_connection, std::function<void()>&& on_disconnection,
+                  std::function<void(std::vector<uint8_t>&&)>&& on_message);
+    ~ConnectionTCP();
 
     void run();
     boost::asio::awaitable<bool> connect(const tcp::endpoint& remote_endpoint);
@@ -43,9 +43,9 @@ private:
 };
 
 
-inline PeerTCP::PeerTCP(boost::asio::io_context& ctx, tcp::socket&& socket,
-    std::function<void()>&& on_connection, std::function<void()>&& on_disconnection,
-    std::function<void(std::vector<uint8_t>&&)>&& on_message)
+inline ConnectionTCP::ConnectionTCP(boost::asio::io_context& ctx, tcp::socket&& socket,
+                                    std::function<void()>&& on_connection, std::function<void()>&& on_disconnection,
+                                    std::function<void(std::vector<uint8_t>&&)>&& on_message)
     : on_connection_(std::move(on_connection)),
     on_disconnection_(std::move(on_disconnection)),
     on_message_(std::move(on_message)),
@@ -53,13 +53,13 @@ inline PeerTCP::PeerTCP(boost::asio::io_context& ctx, tcp::socket&& socket,
     if (is_connected_) on_connection_();
 }
 
-inline PeerTCP::~PeerTCP() {
+inline ConnectionTCP::~ConnectionTCP() {
     disconnect();
 
     if (worker_.joinable()) worker_.join();
 }
 
-inline void PeerTCP::run() {
+inline void ConnectionTCP::run() {
     // Start receiving messages
     co_spawn(ctx_, [this]()->boost::asio::awaitable<void> {
         while (is_connected_) {
@@ -78,15 +78,15 @@ inline void PeerTCP::run() {
     worker_.detach();
 }
 
-inline boost::asio::awaitable<bool> PeerTCP::connect(const tcp::endpoint& remote_endpoint) {
+inline boost::asio::awaitable<bool> ConnectionTCP::connect(const tcp::endpoint& remote_endpoint) {
     if (is_connected_) {
-        spdlog::error("[PeerTCP] Socket is already connected");
+        spdlog::error("[ConnectionTCP] Socket is already connected");
         co_return false;
     }
 
     const auto [ec] = co_await socket_.async_connect(remote_endpoint, as_tuple(boost::asio::use_awaitable));
     if (ec) {
-        spdlog::error("[PeerTCP] Error connecting to {}:{}", remote_endpoint.address().to_string(),
+        spdlog::error("[ConnectionTCP] Error connecting to {}:{}", remote_endpoint.address().to_string(),
             remote_endpoint.port());
         co_return false;
     }
@@ -97,7 +97,7 @@ inline boost::asio::awaitable<bool> PeerTCP::connect(const tcp::endpoint& remote
     co_return true;
 }
 
-inline void PeerTCP::disconnect() {
+inline void ConnectionTCP::disconnect() {
     if (!is_connected_.exchange(false)) return;
 
     receive_queue_.clear();
@@ -108,13 +108,13 @@ inline void PeerTCP::disconnect() {
         //TODO: Process remaining send queue?
         socket_.close();
     } catch (const boost::system::system_error& e) {
-        spdlog::error("[PeerTCP] Error shutting down socket: {}", e.what());
+        spdlog::error("[ConnectionTCP] Error shutting down socket: {}", e.what());
     }
 
     on_disconnection_();
 }
 
-inline void PeerTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> message) {
+inline void ConnectionTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> message) {
     if (!message || !is_connected_) return;
 
     send_queue_.push(std::move(message));
@@ -128,7 +128,7 @@ inline void PeerTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> m
 
             if (auto [ec, _] = co_await socket_.async_send(boost::asio::buffer((*message)->data(), (*message)->size()),
                 as_tuple(boost::asio::use_awaitable)); ec) {
-                spdlog::error("[PeerTCP] Error sending message: {}", ec.what());
+                spdlog::error("[ConnectionTCP] Error sending message: {}", ec.what());
                 disconnect();
                 co_return;
             }
@@ -138,22 +138,22 @@ inline void PeerTCP::send_message(std::shared_ptr<flatbuffers::DetachedBuffer> m
     }, boost::asio::detached);
 }
 
-inline void PeerTCP::set_no_delay(const bool no_delay) {
+inline void ConnectionTCP::set_no_delay(const bool no_delay) {
     try {
         socket_.set_option(tcp::no_delay(no_delay));
     } catch (const boost::system::system_error& e) {
-        spdlog::error("[PeerTCP] Error setting no-delay: {}", e.what());
+        spdlog::error("[ConnectionTCP] Error setting no-delay: {}", e.what());
     }
 }
 
-inline boost::asio::awaitable<void> PeerTCP::receive_message() {
+inline boost::asio::awaitable<void> ConnectionTCP::receive_message() {
     constexpr size_t MESSAGE_SIZE_PREFIX_BYTES = sizeof(flatbuffers::uoffset_t);
 
     std::array<uint8_t, MESSAGE_SIZE_PREFIX_BYTES> header_buffer {};
     if (const auto [ec, _] = co_await async_read(socket_,
         boost::asio::buffer(header_buffer),
         as_tuple(boost::asio::use_awaitable)); ec) {
-        spdlog::error("[PeerTCP] Error on receiving header: {}", ec.what());
+        spdlog::error("[ConnectionTCP] Error on receiving header: {}", ec.what());
         disconnect();
         co_return;
     }
@@ -164,7 +164,7 @@ inline boost::asio::awaitable<void> PeerTCP::receive_message() {
     if (const auto [ec, _] = co_await async_read(socket_,
         boost::asio::buffer(body_buffer),
         as_tuple(boost::asio::use_awaitable)); ec) {
-        spdlog::error("[PeerTCP] Error on receiving body: {}", ec.what());
+        spdlog::error("[ConnectionTCP] Error on receiving body: {}", ec.what());
         disconnect();
         co_return;
     }

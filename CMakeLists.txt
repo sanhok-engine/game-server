@@ -5,9 +5,9 @@ project(sanhok-server
 )
 
 ### Dependencies ###
-include(FetchContent)
 find_package(Boost REQUIRED COMPONENTS system)
 
+include(FetchContent)
 FetchContent_Declare(
     flatbuffers
     GIT_REPOSITORY https://github.com/google/flatbuffers.git
@@ -55,12 +55,12 @@ add_library(libsanhok STATIC
     sanhok/game/zone.cpp
 
     sanhok/net/listener_tcp.hpp
-    sanhok/net/peer_tcp.hpp
-    sanhok/net/peer_udp.hpp
+    sanhok/net/connection_tcp.hpp
+    sanhok/net/connection_udp.hpp
 
-    sanhok/bip_buffer.hpp
-    sanhok/concurrent_map.hpp
-    sanhok/concurrent_queue.hpp
+    sanhok/container/bip_buffer.hpp
+    sanhok/container/concurrent_map.hpp
+    sanhok/container/concurrent_queue.hpp
 )
 add_library(sanhok::libsanhok ALIAS libsanhok)
 target_compile_features(libsanhok PUBLIC cxx_std_20)
@@ -98,8 +98,8 @@ add_subdirectory(examples/dummy-client)
 
 ### Tests ###
 add_executable(libsanhok-tests
-    sanhok/concurrent_map.test.cpp
-    sanhok/concurrent_queue.test.cpp
+        sanhok/container/concurrent_map.test.cpp
+        sanhok/container/concurrent_queue.test.cpp
 )
 target_compile_features(libsanhok-tests PRIVATE cxx_std_20)
 target_link_libraries(libsanhok-tests PRIVATE sanhok::libsanhok Catch2::Catch2WithMain)

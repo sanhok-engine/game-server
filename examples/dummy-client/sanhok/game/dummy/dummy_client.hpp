@@ -3,8 +3,8 @@
 #include <boost/asio.hpp>
 #include <sanhok/game/dummy/dummy_player.hpp>
 #include <sanhok/game/protocol/protocol.hpp>
-#include <sanhok/net/peer_tcp.hpp>
-#include <sanhok/net/peer_udp.hpp>
+#include <sanhok/net/connection_tcp.hpp>
+#include <sanhok/net/connection_udp.hpp>
 
 #include <chrono>
 
@@ -33,8 +33,8 @@ private:
     void handle_client_join(const protocol::ClientJoin* client_join);
 
     boost::asio::io_context ctx_ {};
-    net::PeerTCP peer_tcp_;
-    net::PeerUDP peer_udp_;
+    net::ConnectionTCP peer_tcp_;
+    net::ConnectionUDP peer_udp_;
     std::atomic<bool> is_running_ {false};
     std::thread worker_thread_;
 

@@ -1,5 +1,5 @@
-#include <catch2/catch_test_macros.hpp>
-#include <sanhok/concurrent_map.hpp>
+#include "cmake-build-debug-visual-studio/_deps/catch2-src/src/catch2/catch_test_macros.hpp"
+#include "concurrent_map.hpp"
 
 #include <thread>
 

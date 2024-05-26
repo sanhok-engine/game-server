@@ -1,7 +1,12 @@
+# cmake
+CMakeSettings.json
+
 # build
 build
 cmake-build-*
+out
 
 # editors
 .idea
+.vs
 .vscode

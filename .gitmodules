@@ -1,3 +1,3 @@
 [submodule "sanhok/game/protocol/schemas"]
 	path = sanhok/game/protocol/schemas
-	url = git@github.com:sanhokkk/game-protocol.git
+	url = git@github.com:sanhok-engine/game-protocol-schemas.git
