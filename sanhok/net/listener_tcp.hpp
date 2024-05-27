@@ -34,7 +34,8 @@ inline ListenerTCP::ListenerTCP(boost::asio::io_context& ctx, const unsigned sho
     on_acceptance_(std::move(on_acceptance)) {}
 
 inline void ListenerTCP::start() {
-    listening_ = true;
+    if (listening_.exchange(true)) return;
+
     co_spawn(ctx_, listen(), boost::asio::detached);
 }
 
@@ -49,8 +50,7 @@ inline void ListenerTCP::stop() {
 }
 
 inline boost::asio::awaitable<void> ListenerTCP::listen() {
-    spdlog::info("[ListenerTCP] Starts accepting on {}:{}", acceptor_.local_endpoint().address().to_string(),
-        acceptor_.local_endpoint().port());
+    spdlog::info("[ListenerTCP] Starts accepting on {}:{}", acceptor_.local_endpoint().address().to_string(), acceptor_.local_endpoint().port());
 
     while (listening_) {
         tcp::socket socket {ctx_};
@@ -60,8 +60,7 @@ inline boost::asio::awaitable<void> ListenerTCP::listen() {
             continue;
         }
 
-        spdlog::info("[ListenerTCP] Accepts from {}:{}", socket.remote_endpoint().address().to_string(),
-            socket.remote_endpoint().port());
+        spdlog::info("[ListenerTCP] Accepts from {}:{}", socket.remote_endpoint().address().to_string(), socket.remote_endpoint().port());
         on_acceptance_(ctx_, std::move(socket));
     }
 }

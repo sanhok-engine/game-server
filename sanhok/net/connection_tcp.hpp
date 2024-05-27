@@ -39,7 +39,7 @@ private:
     ConcurrentQueue<std::vector<uint8_t>> receive_queue_;
     ConcurrentQueue<std::shared_ptr<flatbuffers::DetachedBuffer>> send_queue_ {};
     std::atomic<bool> is_sending_ {false};
-    std::thread worker_;
+    std::thread worker_thread_;
 };
 
 
@@ -56,7 +56,7 @@ inline ConnectionTCP::ConnectionTCP(boost::asio::io_context& ctx, tcp::socket&& 
 inline ConnectionTCP::~ConnectionTCP() {
     disconnect();
 
-    if (worker_.joinable()) worker_.join();
+    if (worker_thread_.joinable()) worker_thread_.join();
 }
 
 inline void ConnectionTCP::run() {
@@ -68,14 +68,14 @@ inline void ConnectionTCP::run() {
     }, boost::asio::detached);
 
     // Start handling messages
-    worker_ = std::thread([this] {
+    worker_thread_ = std::thread([this] {
         while (is_connected_) {
             auto message = receive_queue_.pop_wait();
             if (!message) return;
             on_message_(std::move(*message));
         }
     });
-    worker_.detach();
+    worker_thread_.detach();
 }
 
 inline boost::asio::awaitable<bool> ConnectionTCP::connect(const tcp::endpoint& remote_endpoint) {

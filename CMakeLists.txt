@@ -54,6 +54,7 @@ add_library(libsanhok STATIC
     sanhok/game/zone.hpp
     sanhok/game/zone.cpp
 
+    sanhok/net/util/multicast.hpp
     sanhok/net/listener_tcp.hpp
     sanhok/net/connection_tcp.hpp
     sanhok/net/connection_udp.hpp
@@ -103,3 +104,9 @@ add_executable(libsanhok-tests
 )
 target_compile_features(libsanhok-tests PRIVATE cxx_std_20)
 target_link_libraries(libsanhok-tests PRIVATE sanhok::libsanhok Catch2::Catch2WithMain)
+
+add_executable(libsanhok-benchmarks
+        sanhok/container/concurrent_queue.bench.cpp
+)
+target_compile_features(libsanhok-benchmarks PRIVATE cxx_std_20)
+target_link_libraries(libsanhok-benchmarks PRIVATE sanhok::libsanhok Catch2::Catch2WithMain)

@@ -5,10 +5,10 @@
 namespace sanhok::game {
 Client::Client(boost::asio::io_context& ctx, const ClientID id, tcp::socket&& socket)
     : id(id), ctx_(ctx),
-    peer_tcp_(ctx_, std::move(socket),
+    connection_tcp_(ctx_, std::move(socket),
         get_on_connection(), get_on_disconnection(), get_protocol_handler(false)),
-    peer_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {
-    peer_tcp_.set_no_delay(true);
+    connection_udp_(ctx_, udp::endpoint(udp::v4(), 0), get_protocol_handler(true)) {
+    connection_tcp_.set_no_delay(true);
 }
 
 Client::~Client() {
@@ -18,22 +18,22 @@ Client::~Client() {
 void Client::start() {
     if (is_running_.exchange(true)) return;
 
-    peer_tcp_.run();
+    connection_tcp_.run();
 }
 
 void Client::stop() {
     if (!is_running_.exchange(false)) return;
 
-    peer_tcp_.disconnect();
-    peer_udp_.close();
+    connection_tcp_.disconnect();
+    connection_udp_.close();
 }
 
 void Client::send_tcp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
-    peer_tcp_.send_message(std::move(buffer));
+    connection_tcp_.send_message(std::move(buffer));
 }
 
 void Client::send_udp(std::shared_ptr<flatbuffers::DetachedBuffer> buffer) {
-    peer_udp_.send_packet(std::move(buffer));
+    connection_udp_.send_packet(std::move(buffer));
 }
 
 void Client::update(const milliseconds dt) {
@@ -83,8 +83,8 @@ void Client::handle_protocol_client_join(const protocol::ClientJoin* client_join
     if (!client_join) return;
     if (id != client_join->client_id()) return;
 
-    peer_udp_.connect(udp::endpoint(peer_tcp_.remote_endpoint().address(), client_join->udp_port()));
-    peer_udp_.open();
+    connection_udp_.connect(udp::endpoint(connection_tcp_.remote_endpoint().address(), client_join->udp_port()));
+    connection_udp_.open();
 }
 
 void Client::handle_protocol_player_movement(const protocol::PlayerMovement* player_movement) {

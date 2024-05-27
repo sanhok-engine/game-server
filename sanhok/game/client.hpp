@@ -25,7 +25,7 @@ public:
     void update(milliseconds dt);
 
     bool is_running() const { return is_running_; }
-    udp::endpoint local_endpoint_udp() const { return peer_udp_.local_endpoint(); };
+    udp::endpoint local_endpoint_udp() const { return connection_udp_.local_endpoint(); };
 
 private:
     std::function<void()> get_on_connection();
@@ -41,8 +41,8 @@ public:
 
 private:
     boost::asio::io_context& ctx_;
-    net::ConnectionTCP peer_tcp_;
-    net::ConnectionUDP peer_udp_;
+    net::ConnectionTCP connection_tcp_;
+    net::ConnectionUDP connection_udp_;
     std::atomic<bool> is_running_ {false};
 };
 }
